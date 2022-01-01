@@ -5060,7 +5060,7 @@ run_client_simulation() {
 #
 locally_supported() {
      [[ -n "$2" ]] && out "$2 "
-     if $OPENSSL s_client "$1" 2>&1 | grep -aiq "unknown option"; then
+     if $OPENSSL s_client -connect 0:0 "$1" 2>&1 < /dev/null | grep -aiq "unknown option"; then
           prln_local_problem "$OPENSSL doesn't support \"s_client $1\""
           return 7
      fi
@@ -5081,7 +5081,7 @@ run_prototest_openssl() {
      local -i ret=0
      local protos proto
 
-     $OPENSSL s_client "$1" 2>&1 | grep -aiq "unknown option" && return 7
+     $OPENSSL s_client -connect 0:0 "$1" 2>&1 < /dev/null | grep -aiq "unknown option" && return 7
      case "$1" in
           -ssl2) protos="-ssl2" ;;
           -ssl3) protos="-ssl3" ;;
@@ -19411,10 +19411,10 @@ find_openssl_binary() {
 
      $OPENSSL ciphers -s 2>&1 | grep -aiq "unknown option" || OSSL_CIPHERS_S="-s"
 
-     $OPENSSL s_client -ssl2  2>&1 | grep -aiq "unknown option" || HAS_SSL2=true
-     $OPENSSL s_client -ssl3  2>&1 | grep -aiq "unknown option" || HAS_SSL3=true
-     $OPENSSL s_client -tls1_3 2>&1 | grep -aiq "unknown option" || HAS_TLS13=true
-     $OPENSSL s_client -no_ssl2 2>&1 | grep -aiq "unknown option" || HAS_NO_SSL2=true
+     $OPENSSL s_client -connect 0:0 -ssl2  2>&1 | grep -aiq "unknown option" || HAS_SSL2=true
+     $OPENSSL s_client -connect 0:0 -ssl3  2>&1 | grep -aiq "unknown option" || HAS_SSL3=true
+     $OPENSSL s_client -connect 0:0 -tls1_3 2>&1 | grep -aiq "unknown option" || HAS_TLS13=true
+     $OPENSSL s_client -connect 0:0 -no_ssl2 2>&1 | grep -aiq "unknown option" || HAS_NO_SSL2=true
 
      $OPENSSL genpkey -algorithm X448 2>&1 | grep -aq "not found" || HAS_X448=true
      $OPENSSL genpkey -algorithm X25519 2>&1 | grep -aq "not found" || HAS_X25519=true
@@ -19427,18 +19427,18 @@ find_openssl_binary() {
           $OPENSSL s_client -tls1_3 -sigalgs PSS+SHA256:PSS+SHA384 -connect $NXCONNECT 2>&1 | grep -aiq "unknown option" || HAS_SIGALGS=true
      fi
 
-     $OPENSSL s_client -noservername 2>&1 | grep -aiq "unknown option" || HAS_NOSERVERNAME=true
-     $OPENSSL s_client -ciphersuites 2>&1 | grep -aiq "unknown option" || HAS_CIPHERSUITES=true
+     $OPENSSL s_client -connect 0:0 -noservername 2>&1 | grep -aiq "unknown option" || HAS_NOSERVERNAME=true
+     $OPENSSL s_client -connect 0:0 -ciphersuites 2>&1 | grep -aiq "unknown option" || HAS_CIPHERSUITES=true
 
      $OPENSSL ciphers @SECLEVEL=0:ALL > /dev/null 2> /dev/null && HAS_SECLEVEL=true
 
-     $OPENSSL s_client -comp 2>&1 | grep -aiq "unknown option" || HAS_COMP=true
-     $OPENSSL s_client -no_comp 2>&1 | grep -aiq "unknown option" || HAS_NO_COMP=true
+     $OPENSSL s_client -connect 0:0 -comp 2>&1 | grep -aiq "unknown option" || HAS_COMP=true
+     $OPENSSL s_client -connect 0:0 -no_comp 2>&1 | grep -aiq "unknown option" || HAS_NO_COMP=true
 
      OPENSSL_NR_CIPHERS=$(count_ciphers "$(actually_supported_osslciphers 'ALL:COMPLEMENTOFALL' 'ALL')")
 
      # The following statement works with OpenSSL 1.0.2, 1.1.1 and 3.0 and LibreSSL 3.4
-     if $OPENSSL s_client -curves 2>&1 | grep -aiq "unknown option"; then
+     if $OPENSSL s_client -connect 0:0 -curves 2>&1 | grep -aiq "unknown option"; then
           # This is e.g. for LibreSSL (tested with version 3.4.1): WSL users will get "127.0.0.1:0" here,
           # all other "invalid.:0". We need a port here, in any case!
           # The $OPENSSL connect call deliberately fails: when the curve isn't available with
